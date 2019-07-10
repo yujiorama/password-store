@@ -87,7 +87,7 @@ set_gpg_recipients() {
 	if [[ ! -f $current ]]; then
 		cat >&2 <<-_EOF
 		Error: You must run:
-		    $PROGRAM init your-gpg-id
+			$PROGRAM init your-gpg-id
 		before you may use the password store.
 
 		_EOF
@@ -274,42 +274,42 @@ cmd_usage() {
 	echo
 	cat <<-_EOF
 	Usage:
-	    $PROGRAM init [--path=subfolder,-p subfolder] gpg-id...
-	        Initialize new password storage and use gpg-id for encryption.
-	        Selectively reencrypt existing passwords using new gpg-id.
-	    $PROGRAM [ls] [subfolder]
-	        List passwords.
-	    $PROGRAM find pass-names...
-	    	List passwords that match pass-names.
-	    $PROGRAM [show] [--clip[=line-number],-c[line-number]] pass-name
-	        Show existing password and optionally put it on the clipboard.
-	        If put on the clipboard, it will be cleared in $CLIP_TIME seconds.
-	    $PROGRAM grep [GREPOPTIONS] search-string
-	        Search for password files containing search-string when decrypted.
-	    $PROGRAM insert [--echo,-e | --multiline,-m] [--force,-f] pass-name
-	        Insert new password. Optionally, echo the password back to the console
-	        during entry. Or, optionally, the entry may be multiline. Prompt before
-	        overwriting existing password unless forced.
-	    $PROGRAM edit pass-name
-	        Insert a new password or edit an existing password using ${EDITOR:-vi}.
-	    $PROGRAM generate [--no-symbols,-n] [--clip,-c] [--in-place,-i | --force,-f] pass-name [pass-length]
-	        Generate a new password of pass-length (or $GENERATED_LENGTH if unspecified) with optionally no symbols.
-	        Optionally put it on the clipboard and clear board after $CLIP_TIME seconds.
-	        Prompt before overwriting existing password unless forced.
-	        Optionally replace only the first line of an existing file with a new password.
-	    $PROGRAM rm [--recursive,-r] [--force,-f] pass-name
-	        Remove existing password or directory, optionally forcefully.
-	    $PROGRAM mv [--force,-f] old-path new-path
-	        Renames or moves old-path to new-path, optionally forcefully, selectively reencrypting.
-	    $PROGRAM cp [--force,-f] old-path new-path
-	        Copies old-path to new-path, optionally forcefully, selectively reencrypting.
-	    $PROGRAM git git-command-args...
-	        If the password store is a git repository, execute a git command
-	        specified by git-command-args.
-	    $PROGRAM help
-	        Show this text.
-	    $PROGRAM version
-	        Show version information.
+		$PROGRAM init [--path=subfolder,-p subfolder] gpg-id...
+			Initialize new password storage and use gpg-id for encryption.
+			Selectively reencrypt existing passwords using new gpg-id.
+		$PROGRAM [ls] [subfolder]
+			List passwords.
+		$PROGRAM find pass-names...
+			List passwords that match pass-names.
+		$PROGRAM [show] [--clip[=line-number],-c[line-number]] pass-name
+			Show existing password and optionally put it on the clipboard.
+			If put on the clipboard, it will be cleared in $CLIP_TIME seconds.
+		$PROGRAM grep [GREPOPTIONS] search-string
+			Search for password files containing search-string when decrypted.
+		$PROGRAM insert [--echo,-e | --multiline,-m] [--force,-f] pass-name
+			Insert new password. Optionally, echo the password back to the console
+			during entry. Or, optionally, the entry may be multiline. Prompt before
+			overwriting existing password unless forced.
+		$PROGRAM edit pass-name
+			Insert a new password or edit an existing password using ${EDITOR:-vi}.
+		$PROGRAM generate [--no-symbols,-n] [--clip,-c] [--in-place,-i | --force,-f] pass-name [pass-length]
+			Generate a new password of pass-length (or $GENERATED_LENGTH if unspecified) with optionally no symbols.
+			Optionally put it on the clipboard and clear board after $CLIP_TIME seconds.
+			Prompt before overwriting existing password unless forced.
+			Optionally replace only the first line of an existing file with a new password.
+		$PROGRAM rm [--recursive,-r] [--force,-f] pass-name
+			Remove existing password or directory, optionally forcefully.
+		$PROGRAM mv [--force,-f] old-path new-path
+			Renames or moves old-path to new-path, optionally forcefully, selectively reencrypting.
+		$PROGRAM cp [--force,-f] old-path new-path
+			Copies old-path to new-path, optionally forcefully, selectively reencrypting.
+		$PROGRAM git git-command-args...
+			If the password store is a git repository, execute a git command
+			specified by git-command-args.
+		$PROGRAM help
+			Show this text.
+		$PROGRAM version
+			Show version information.
 
 	More information may be found in the pass(1) man page.
 	_EOF
@@ -399,6 +399,15 @@ cmd_show() {
 		else
 			echo "${path%\/}"
 		fi
+		case "${OS:-Linux}" in
+			Windows*)
+				cmd //c "tree /F $PREFIX/$path" | tail -n +3 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
+				;;
+			*)
+				tree -C -l --noreport "$PREFIX/$path" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
+				;;
+		esac
+
 		tree -C -l --noreport "$PREFIX/$path" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
 	elif [[ -z $path ]]; then
 		die "Error: password store is empty. Try \"pass init\"."
@@ -411,7 +420,14 @@ cmd_find() {
 	[[ $# -eq 0 ]] && die "Usage: $PROGRAM $COMMAND pass-names..."
 	IFS="," eval 'echo "Search Terms: $*"'
 	local terms="*$(printf '%s*|*' "$@")"
-	tree -C -l --noreport -P "${terms%|*}" --prune --matchdirs --ignore-case "$PREFIX" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
+	case "${OS:-Linux}" in
+		Windows*)
+			cmd //c "tree $PREFIX" | tail -n +3 | grep -E "{$terms}" | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
+			;;
+		*)
+			tree -C -l --noreport -P "${terms%|*}" --prune --matchdirs --ignore-case "$PREFIX" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
+			;;
+	esac
 }
 
 cmd_grep() {
