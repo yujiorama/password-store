@@ -35,7 +35,11 @@ set_git() {
 }
 git_add_file() {
 	[[ -n $INNER_GIT_DIR ]] || return
-	git -C "$INNER_GIT_DIR" add "$1" || return
+	local newfile="$1"
+	if type cygpath >/dev/null 2>&1; then
+		newfile="$(cygpath -ma ${newfile})"
+	fi
+	git -C "$INNER_GIT_DIR" add "$newfile" || return
 	[[ -n $(git -C "$INNER_GIT_DIR" status --porcelain "$1") ]] || return
 	git_commit "$2"
 }
@@ -401,7 +405,7 @@ cmd_show() {
 		fi
 		case "${OS:-Linux}" in
 			Windows*)
-				cmd //c "tree /F $PREFIX/$path" | tail -n +3 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
+				cmd //c "tree /F $(cygpath -wa $PREFIX/$path)" | iconv -f SJIS -t UTF-8 | tail -n +3 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
 				;;
 			*)
 				tree -C -l --noreport "$PREFIX/$path" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
@@ -420,7 +424,7 @@ cmd_find() {
 	local terms="*$(printf '%s*|*' "$@")"
 	case "${OS:-Linux}" in
 		Windows*)
-			cmd //c "tree $PREFIX" | tail -n +3 | grep -E "{$terms}" | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
+			cmd //c "tree /F $(cygpath -wa $PREFIX)" | iconv -f SJIS -t UTF-8 | tail -n +3 | grep -E "{$terms}" | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
 			;;
 		*)
 			tree -C -l --noreport -P "${terms%|*}" --prune --matchdirs --ignore-case "$PREFIX" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
