@@ -46,12 +46,12 @@ install: install-common
 	@install -v -d "$(DESTDIR)$(LIBDIR)/password-store" && install -m 0644 -v "$(PLATFORMFILE)" "$(DESTDIR)$(LIBDIR)/password-store/platform.sh"
 	@install -v -d "$(DESTDIR)$(LIBDIR)/password-store/extensions"
 	@install -v -d "$(DESTDIR)$(BINDIR)/"
-	@trap 'rm -f src/.pass' EXIT; sed 's:.*PLATFORM_FUNCTION_FILE.*:source "$(LIBDIR)/password-store/platform.sh":;s:^SYSTEM_EXTENSION_DIR=.*:SYSTEM_EXTENSION_DIR="$(LIBDIR)/password-store/extensions":' src/password-store.sh > src/.pass && \
+	@trap 'rm -f src/.pass' EXIT; sed 's|.*PLATFORM_FUNCTION_FILE.*|source "$(LIBDIR)/password-store/platform.sh"|;s|^SYSTEM_EXTENSION_DIR=.*|SYSTEM_EXTENSION_DIR="$(LIBDIR)/password-store/extensions"|' src/password-store.sh > src/.pass && \
 	install -v -d "$(DESTDIR)$(BINDIR)/" && install -m 0755 -v src/.pass "$(DESTDIR)$(BINDIR)/pass"
 else
 install: install-common
 	@install -v -d "$(DESTDIR)$(LIBDIR)/password-store/extensions"
-	@trap 'rm -f src/.pass' EXIT; sed '/PLATFORM_FUNCTION_FILE/d;s:^SYSTEM_EXTENSION_DIR=.*:SYSTEM_EXTENSION_DIR="$(LIBDIR)/password-store/extensions":' src/password-store.sh > src/.pass && \
+	@trap 'rm -f src/.pass' EXIT; sed '/PLATFORM_FUNCTION_FILE/d;s|^SYSTEM_EXTENSION_DIR=.*|SYSTEM_EXTENSION_DIR="$(LIBDIR)/password-store/extensions"|' src/password-store.sh > src/.pass && \
 	install -v -d "$(DESTDIR)$(BINDIR)/" && install -m 0755 -v src/.pass "$(DESTDIR)$(BINDIR)/pass"
 endif
 
