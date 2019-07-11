@@ -405,12 +405,13 @@ cmd_show() {
 		fi
 		case "${OS:-Linux}" in
 			Windows*)
-				cmd //c "tree /F $(cygpath -wa $PREFIX/$path)" | iconv -f SJIS -t UTF-8 | tail -n +3 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
-				;;
-			*)
-				tree -C -l --noreport "$PREFIX/$path" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
+				if ! type tree >/dev/null 2>&1; then
+				    cmd //c "tree /F $(cygpath -wa $PREFIX/$path)" | iconv -f SJIS -t UTF-8 | tail -n +3 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
+				    return
+			    fi
 				;;
 		esac
+		tree -C -l --noreport "$PREFIX/$path" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g' # remove .gpg at end of line, but keep colors
 	elif [[ -z $path ]]; then
 		die "Error: password store is empty. Try \"pass init\"."
 	else
@@ -424,12 +425,13 @@ cmd_find() {
 	local terms="*$(printf '%s*|*' "$@")"
 	case "${OS:-Linux}" in
 		Windows*)
-			cmd //c "tree /F $(cygpath -wa $PREFIX)" | iconv -f SJIS -t UTF-8 | tail -n +3 | grep -E "{$terms}" | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
-			;;
-		*)
-			tree -C -l --noreport -P "${terms%|*}" --prune --matchdirs --ignore-case "$PREFIX" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
+			if ! type tree >/dev/null 2>&1; then
+			    cmd //c "tree /F $(cygpath -wa $PREFIX)" | iconv -f SJIS -t UTF-8 | tail -n +3 | grep -E "{$terms}" | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
+			    return
+		    fi
 			;;
 	esac
+	tree -C -l --noreport -P "${terms%|*}" --prune --matchdirs --ignore-case "$PREFIX" | tail -n +2 | sed -E 's/\.gpg(\x1B\[[0-9]+m)?( ->|$)/\1\2/g'
 }
 
 cmd_grep() {
